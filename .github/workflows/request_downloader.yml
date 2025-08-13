@@ -35,8 +35,12 @@ jobs:
         echo "${{ secrets.TOKEN1 }}" > token1.json
       shell: bash
 
-    - name: Run downloader script
-      env:
-        FTP_HOST: ${{ secrets.FTP_HOST }}
-        FTP_USER: ${{ secrets.FTP_USER }}
-        FTP_PASS_
+- name: Run downloader script
+  env:
+    FTP_HOST: ${{ secrets.FTP_HOST }}
+    FTP_USER: ${{ secrets.FTP_USER }}
+    FTP_PASS: ${{ secrets.FTP_PASS }}
+    GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
+    GOOGLE_DRIVE_CRED: ${{ secrets.GOOGLE_DRIVE_CRED }}
+  run: python main.py
+
