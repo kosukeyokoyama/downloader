@@ -148,7 +148,7 @@ def process_local_requests():
 
         folder_path = DOWNLOAD_DIR
         exe_to_run = "python3"
-        script_path = "./scripts/downloader.py"
+        script_path = "./scripts/download.py"
         url = request.get('url')
         if not isinstance(url, str):
             print(f"Invalid URL type in request: {type(url)}")
