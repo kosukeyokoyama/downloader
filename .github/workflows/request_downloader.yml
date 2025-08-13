@@ -3,7 +3,7 @@ name: Request Downloader
 on:
   push:
     paths:
-      - 'upload_contents/request/**'  # JSONが追加されたときだけ実行
+      - 'upload_request/**'  # JSONが追加されたときだけ実行
   workflow_dispatch:  # 手動実行も可能
 
 jobs:
