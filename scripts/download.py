@@ -2,8 +2,7 @@ import yt_dlp
 import sys
 import os
 import time
-import json
-import pathlib
+import glob
 
 def resource_path(relative_path):
     base_path = os.path.dirname(os.path.abspath(__file__))
@@ -12,74 +11,119 @@ def resource_path(relative_path):
 def sanitize_input(input_str):
     return input_str.strip('"')
 
-def download_media(request_json_path):
-    print(f"📂 Loading request JSON: {request_json_path}")
-    try:
-        with open(request_json_path, "r", encoding="utf-8") as f:
-            req = json.load(f)
-    except Exception as e:
-        print(f"❌ Failed to load JSON: {e}")
-        return
+def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
+    filename = os.path.join(output_dir, name)
+    mp3_path = filename + '.mp3'
+    url = sanitize_input(url)
+    youtube_cookie = resource_path("cookies/youtube_cookies.txt")
+    nico_cookie = resource_path("cookies/niconico_cookies.txt")
 
-    url = req.get("url")
-    mode = req.get("format")
-    name = req.get("file_name", "output")
-    download_dir = os.path.abspath(req.get("download_dir", "download"))
+    site_specific_opts = {}
+    if "youtube.com" in url or "youtu.be" in url:
+        site_specific_opts['cookiefile'] = youtube_cookie
+    elif "nicovideo.jp" in url:
+        site_specific_opts['cookiefile'] = nico_cookie
+
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': filename,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'noplaylist': True,
+        'quiet': False,
+        'socket_timeout': 180,
+        'retries': retries,
+        'fragment_retries': retries,
+        **site_specific_opts
+    }
+
+    for attempt in range(retries):
+        try:
+            print(f"Audio: Attempt {attempt + 1} of {retries}...")
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            if os.path.exists(mp3_path):
+                now = time.time()
+                os.utime(mp3_path, (now, now))
+                print(f"Timestamps updated: {mp3_path}")
+            else:
+                print(f"Warning: Expected file not found: {mp3_path}")
+            print(f"Audio downloaded and saved as {name}.mp3")
+            return True
+        except Exception as e:
+            print(f"Audio Error: {e}")
+            if attempt < retries - 1:
+                time.sleep(sleep_sec)
+            else:
+                print("Audio download failed.")
+                return False
+
+def download_video(url, output_dir, name, retries=5, sleep_sec=5):
+    filename = os.path.join(output_dir, name)
+    url = sanitize_input(url)
+    youtube_cookie = resource_path("cookies/youtube_cookies.txt")
+    nico_cookie = resource_path("cookies/niconico_cookies.txt")
+
+    site_specific_opts = {}
+    if "youtube.com" in url or "youtu.be" in url:
+        site_specific_opts['cookiefile'] = youtube_cookie
+    elif "nicovideo.jp" in url:
+        site_specific_opts['cookiefile'] = nico_cookie
+
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'outtmpl': filename,
+        'merge_output_format': 'mp4',
+        'noplaylist': True,
+        'quiet': False,
+        'socket_timeout': 180,
+        'retries': retries,
+        'fragment_retries': retries,
+        **site_specific_opts
+    }
+
+    for attempt in range(retries):
+        try:
+            print(f"Video: Attempt {attempt + 1} of {retries}...")
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            matched_files = glob.glob(filename + '.mp4')
+            if matched_files:
+                target_file = matched_files[0]
+                now = time.time()
+                os.utime(target_file, (now, now))
+                print(f"Timestamps updated: {target_file}")
+                print(f"Video downloaded and saved as {name}.mp4")
+                return True
+            else:
+                print(f"Warning: File not found for pattern: {filename}.mp4")
+                return False
+        except Exception as e:
+            print(f"Video Error: {e}")
+            if attempt < retries - 1:
+                time.sleep(sleep_sec)
+            else:
+                print("Video download failed.")
+                return False
+
+if __name__ == '__main__':
+    if len(sys.argv) < 6:
+        sys.exit("Usage: python download.py <URL> <Download Directory> <Name> <mode: audio|video> <local_json>")
+
+    url = sys.argv[1]
+    download_dir = sys.argv[2]
+    name = sys.argv[3]
+    mode = sys.argv[4].lower()
+    local_json = sys.argv[5]
+
     os.makedirs(download_dir, exist_ok=True)
 
-    print(f"🌐 URL: {url}")
-    print(f"🎯 Mode: {mode}")
-    print(f"📂 Download dir: {download_dir}")
-    print(f"📄 File name: {name}")
-
-    cookies = None
-    if "youtube.com" in url or "youtu.be" in url:
-        cookies = resource_path("cookies/youtube_cookies.txt")
-    elif "nicovideo.jp" in url:
-        cookies = resource_path("cookies/niconico_cookies.txt")
-
-    def progress(d):
-        print(f"🔹 Progress: {d}")
-
-    common_opts = {
-        'outtmpl': os.path.join(download_dir, name),
-        'quiet': False,
-        'retries': 3,
-        'fragment_retries': 3,
-        'progress_hooks': [progress]
-    }
-    if cookies:
-        common_opts['cookiefile'] = cookies
-
-    try:
-        if mode == "audio":
-            ydl_opts = {
-                **common_opts,
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-            }
-        elif mode == "video":
-            ydl_opts = {
-                **common_opts,
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-                'merge_output_format': 'mp4',
-            }
-        else:
-            print(f"❌ Unsupported mode: {mode}")
-            return
-
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        print(f"✅ Download completed for {name}")
-    except Exception as e:
-        print(f"❌ Download failed: {e}")
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        sys.exit("Usage: python download.py <request_json_path>")
-
-    download_media(sys.argv[1])
+    if mode == 'audio':
+        download_audio(url, download_dir, name)
+    elif mode == 'video':
+        download_video(url, download_dir, name)
+    else:
+        sys.exit("Mode must be 'audio' or 'video'")
