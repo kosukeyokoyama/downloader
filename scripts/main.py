@@ -185,17 +185,17 @@ def main_loop():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-    while True:
-        try:
-            # ダウンロードディレクトリのクリア
-            for file in pathlib.Path(DOWNLOAD_DIR).iterdir():
-                if file.is_file():
-                    file.unlink()
-        except Exception as e:
-            print(f"Error cleaning download dir: {e}")
+    
+    try:
+           # ダウンロードディレクトリのクリア
+        for file in pathlib.Path(DOWNLOAD_DIR).iterdir():
+            if file.is_file():
+                file.unlink()
+    except Exception as e:
+        print(f"Error cleaning download dir: {e}")
 
-        process_local_requests()
-        time.sleep(0.1)
+    process_local_requests()
+    time.sleep(0.1)
 
 if __name__ == "__main__":
     main_loop()
