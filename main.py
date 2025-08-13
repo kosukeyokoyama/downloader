@@ -178,7 +178,10 @@ def process_local_requests():
             local_file
         ]
         print(f"Running command: {' '.join(command)}")
-        subprocess.run(command, shell=True, check=True)
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+
+        print(result.stdout)  # 標準出力
+        print(result.stderr)  # エラー出力
 
 # ---- メインループ ----
 def main_loop():
