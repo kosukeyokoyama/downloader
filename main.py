@@ -38,7 +38,6 @@ SCOPES_DRIVE = ['https://www.googleapis.com/auth/drive.file']
 
 # ---- Gmail 認証 ----
 def gmail_authenticate():
-    # client_secret.json を Secrets から生成
     with open("client_secret.json", "w", encoding="utf-8") as f:
         f.write(CLIENT_SECRET_CONTENT)
 
@@ -113,27 +112,17 @@ def ftp_connect(retries=5, delay=5):
             time.sleep(delay)
     raise ConnectionError("FTP接続に失敗しました（リトライ上限）")
 
-def list_ftp_files(ftp, path):
-    files = []
-    ftp.cwd(path)
-    ftp.retrlines('NLST', files.append)
-    return files
-
-def download_ftp_file(ftp, ftp_path, local_path):
-    with open(local_path, 'wb') as f:
-        ftp.retrbinary(f"RETR {ftp_path}", f.write)
-
-def remove_ftp_file(ftp, ftp_path):
-    ftp.delete(ftp_path)
-
 def upload_ftp_file(ftp, local_path, ftp_path, local_json):
     with open(local_path, 'rb') as f:
-        ftp.storbinary(f"STOR " + ftp_path, f)
-        tuuti(local_json)
+        ftp.storbinary(f"STOR {ftp_path}", f)
+    tuuti(local_json)
     print(f"Uploaded {local_path} to {ftp_path}")
 
 # ---- ローカルリクエスト処理 ----
 def process_local_requests():
+    os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
+    os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
     for file_name in os.listdir(LOCAL_REQUEST_DIR):
         if not file_name.endswith('.json'):
             continue
@@ -154,7 +143,6 @@ def process_local_requests():
             print(f"Invalid URL type in request: {type(url)}")
             os.remove(local_file)
             continue
-        url_encoded = urllib.parse.quote(url, safe=":/?&=")
 
         file_name_clean = re.sub(r'[<>:"/\\|?*]', '', request['file_name'])
         global ID, id, to, password
@@ -171,26 +159,25 @@ def process_local_requests():
         command = [
             exe_to_run,
             script_path,
-            url_encoded,
+            url,
             folder_path,
             file_name_clean,
             mode,
             local_file
         ]
         print(f"Running command: {' '.join(command)}")
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
-        print(result.stdout)  # 標準出力
-        print(result.stderr)  # エラー出力
+        # 標準出力をリアルタイムで表示する
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        for line in process.stdout:
+            print(line, end='')
+        process.wait()
 
 # ---- メインループ ----
 def main_loop():
-    os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
-    os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-
-    
     try:
-           # ダウンロードディレクトリのクリア
+        # ダウンロードディレクトリのクリア
+        os.makedirs(DOWNLOAD_DIR, exist_ok=True)
         for file in pathlib.Path(DOWNLOAD_DIR).iterdir():
             if file.is_file():
                 file.unlink()
@@ -198,7 +185,6 @@ def main_loop():
         print(f"Error cleaning download dir: {e}")
 
     process_local_requests()
-    time.sleep(0.1)
 
 if __name__ == "__main__":
     main_loop()
