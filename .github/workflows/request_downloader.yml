@@ -3,7 +3,7 @@ name: Request Downloader
 on:
   push:
     paths:
-      - 'upload_request/**'
+      - 'upload_requests/**'
   workflow_dispatch:
 
 jobs:
