@@ -112,11 +112,39 @@ def ftp_connect(retries=5, delay=5):
             time.sleep(delay)
     raise ConnectionError("FTP接続に失敗しました（リトライ上限）")
 
-def upload_ftp_file(ftp, local_path, ftp_path, local_json):
+def upload_ftp_file(ftp, local_path, ftp_path):
     with open(local_path, 'rb') as f:
         ftp.storbinary(f"STOR {ftp_path}", f)
-    tuuti(local_json)
     print(f"Uploaded {local_path} to {ftp_path}")
+
+# ---- Google Drive 認証 ----
+def authenticate_google_drive():
+    creds = None
+    if os.path.exists(TOKEN_PATH):
+        creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES_DRIVE)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", SCOPES_DRIVE)
+            creds = flow.run_local_server(port=8080)
+        with open(TOKEN_PATH, "w") as f:
+            f.write(creds.to_json())
+    return build('drive', 'v3', credentials=creds)
+
+def upload_file_to_drive(file_path, file_name, folder_id=None):
+    service = authenticate_google_drive()
+    file_metadata = {'name': file_name}
+    if folder_id:
+        file_metadata['parents'] = [folder_id]
+    media = MediaFileUpload(file_path, resumable=True)
+    file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+    print(f"Uploaded to Drive: {file_name}, File ID: {file['id']}")
+    return file['id']
+
+# ---- ファイルサイズ取得 ----
+def get_file_size(file_path):
+    return os.path.getsize(file_path)
 
 # ---- ローカルリクエスト処理 ----
 def process_local_requests():
@@ -166,24 +194,36 @@ def process_local_requests():
             local_file
         ]
         print(f"Running command: {' '.join(command)}")
+        subprocess.run(command)
 
-        # 標準出力をリアルタイムで表示する
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        for line in process.stdout:
-            print(line, end='')
-        process.wait()
+        downloaded_file_path = os.path.join(folder_path, f"{file_name_clean}.{request['format']}")
+        try:
+            file_size = get_file_size(downloaded_file_path)
+            print(f"File size: {file_size / (1024*1024):.2f} MB")
 
-# ---- メインループ ----
+            # Gmail通知
+            tuuti(local_file)
+
+            # FTPアップロード
+            ftp = ftp_connect()
+            try:
+                ftp_file_path = f"/upload_contents/{ID}/{file_name_clean}.{request['format']}"
+                upload_ftp_file(ftp, downloaded_file_path, ftp_file_path)
+            finally:
+                ftp.quit()
+
+            # Google Drive アップロード
+            upload_file_to_drive(downloaded_file_path, f"{file_name_clean}.{request['format']}")
+
+            os.remove(downloaded_file_path)
+
+        except Exception as e:
+            print(f"Error processing {local_file}: {e}")
+
+# ---- メイン処理 ----
 def main_loop():
-    try:
-        # ダウンロードディレクトリのクリア
-        os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-        for file in pathlib.Path(DOWNLOAD_DIR).iterdir():
-            if file.is_file():
-                file.unlink()
-    except Exception as e:
-        print(f"Error cleaning download dir: {e}")
-
+    os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
+    os.makedirs(DOWNLOAD_DIR, exist_ok=True)
     process_local_requests()
 
 if __name__ == "__main__":
