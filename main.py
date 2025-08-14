@@ -186,21 +186,13 @@ def process_local_requests():
         if not file_name.endswith('.json'):
             continue
         local_file = os.path.join(LOCAL_REQUEST_DIR, file_name)
-        request = None
-        try:
-            with open(local_file, 'r', encoding='utf-8') as f:
-                
-                request = json.load(f)
-                print(f"DEBUG: Raw content of {local_file}: {repr(request)}")
-        except json.JSONDecodeError as e:
-            print(f"Error processing {local_file}: Invalid JSON format. Details: {e}")
-            os.remove(local_file)
+        
+        # safe_load_json関数を使用してファイルを読み込む
+        request = safe_load_json(local_file)
+        
+        # 読み込みに失敗した場合は次のファイルへ
+        if request is None:
             continue
-        except Exception as e:
-            print(f"An unexpected error occurred while processing {local_file}: {e}")
-            os.remove(local_file)
-            continue
-
         url = request.get('url')
         if not isinstance(url, str):
             print(f"Invalid URL type in request: {type(url)}")
