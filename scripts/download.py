@@ -3,7 +3,9 @@ import sys
 import os
 import time
 import glob
-
+if len(sys.argv) > 2:
+    out_dir = sys.argv[2]
+    os.makedirs(out_dir, exist_ok=True)
 def resource_path(relative_path):
     base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
