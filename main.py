@@ -51,7 +51,7 @@ def gmail_authenticate():
     
     with open("client_secret.json", "w", encoding="utf-8") as f:
         # 辞書を厳密なJSON形式でファイルに書き出す
-        json.dump(client_secret_data, f)
+        json.dump(client_secret_data, f, indent=4)
 
     creds = None
     if os.path.exists(TOKEN1_PATH):
@@ -144,7 +144,7 @@ def authenticate_google_drive():
         
     with open("client_secret.json", "w", encoding="utf-8") as f:
         # 辞書を厳密なJSON形式でファイルに書き出す
-        json.dump(client_secret_data, f)
+        json.dump(client_secret_data, f, indent=4)
         
     creds = None
     if os.path.exists(TOKEN_PATH):
@@ -196,7 +196,11 @@ def process_local_requests():
             with open(local_file, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            request = ast.literal_eval(content)
+            # JSON形式とPython辞書形式の両方に対応するロジック
+            try:
+                request = json.loads(content)
+            except json.JSONDecodeError:
+                request = ast.literal_eval(content)
             
             if not isinstance(request, dict):
                 raise ValueError("Parsed content is not a dictionary.")
@@ -264,7 +268,6 @@ def process_local_requests():
                 os.remove(downloaded_file_path)
             if os.path.exists(local_file):
                 os.remove(local_file)
-
 
 # ---- メイン処理 ----
 def main_loop():
