@@ -46,7 +46,7 @@ jobs:
         run: |
           source .venv/bin/activate
           pip install --upgrade pip
-          pip install requests google-auth google-auth-oauthlib google-api-python-client yt_dlp pywebpush
+          pip install requests google-auth google-auth-oauthlib google-api-python-client yt_dlp pywebpush jq
 
       - name: Write secrets to local files
         run: |
@@ -56,6 +56,14 @@ jobs:
           echo "${{ secrets.TOKEN }}" > token.json
           echo "${{ secrets.TOKEN1 }}" > token1.json
           echo "${{ secrets.YT_COOKIE }}" > cookies/youtube_cookies.txt
+        shell: bash
+      
+      - name: Debug JSON files
+        run: |
+          echo "Validating client_secret.json..."
+          jq . client_secret.json
+          echo "Validating client_secret1.json..."
+          jq . client_secret1.json
         shell: bash
 
       - name: Run downloader script
