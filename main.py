@@ -95,6 +95,7 @@ def safe_load_json(file_path):
 # ---- 通知 ----
 def tuuti(file_path):
     data = safe_load_json(file_path)
+    print()data
     if data.get("notify_method") != "gmail":
         print("ℹ️ 通知は無効化されています。スキップします。")
         os.remove(file_path)
