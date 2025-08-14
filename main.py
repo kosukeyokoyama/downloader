@@ -96,7 +96,7 @@ def safe_load_json(file_path):
         print(f"Failed to parse JSON {file_path}: {e}")
         os.remove(file_path)
         return None
-e
+
 
 # ---- 通知 ----
 def tuuti(file_path):
