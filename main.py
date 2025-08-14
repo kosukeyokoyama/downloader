@@ -189,8 +189,9 @@ def process_local_requests():
         request = None
         try:
             with open(local_file, 'r', encoding='utf-8') as f:
-                print(f"DEBUG: Raw content of {local_file}: {repr(content)}")
+                
                 request = json.load(f)
+                print(f"DEBUG: Raw content of {local_file}: {repr(request)}")
         except json.JSONDecodeError as e:
             print(f"Error processing {local_file}: Invalid JSON format. Details: {e}")
             os.remove(local_file)
