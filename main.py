@@ -41,8 +41,15 @@ SCOPES_DRIVE = ['https://www.googleapis.com/auth/drive.file']
 
 # ---- Gmail 認証 ----
 def gmail_authenticate():
+    client_secret_data = {}
+    try:
+        client_secret_data = ast.literal_eval(CLIENT_SECRET_CONTENT)
+    except (ValueError, SyntaxError) as e:
+        print(f"CLIENT_SECRET_CONTENT の解析に失敗しました。JSON形式を確認してください: {e}")
+        return None
+    
     with open("client_secret.json", "w", encoding="utf-8") as f:
-        f.write(CLIENT_SECRET_CONTENT)
+        json.dump(client_secret_data, f)
 
     creds = None
     if os.path.exists(TOKEN1_PATH):
@@ -70,12 +77,14 @@ def send_message(service, user_id, message):
 
 def send_gmail_notification(to_addr, subject, body):
     creds = gmail_authenticate()
-    service = build('gmail', 'v1', credentials=creds)
-    message = create_message(to_addr, subject, body)
-    send_message(service, 'me', message)
+    if creds:
+        service = build('gmail', 'v1', credentials=creds)
+        message = create_message(to_addr, subject, body)
+        send_message(service, 'me', message)
+    else:
+        raise ConnectionError("Gmail認証情報が無効です。")
 
 # ---- 通知 ----
-# 変更点: 引数をファイルパスではなく、解析済みの辞書 (data_dict) に変更
 def tuuti(data_dict):
     print("tuuti:" + str(data_dict))
     if data_dict.get("notify_method") != "gmail":
@@ -100,7 +109,6 @@ def tuuti(data_dict):
         send_gmail_notification(to_addr, subject, body)
         print("✅ Gmail通知送信完了")
     except Exception as e:
-        # ここで発生したエラーの詳細を出力する
         print(f"❌ Gmail通知の送信中にエラーが発生しました: {e}")
 
 # ---- FTP ----
@@ -124,9 +132,16 @@ def upload_ftp_file(ftp, local_path, ftp_path):
 
 # ---- Google Drive 認証 ----
 def authenticate_google_drive():
+    client_secret_data = {}
+    try:
+        client_secret_data = ast.literal_eval(CLIENT_SECRET1_CONTENT)
+    except (ValueError, SyntaxError) as e:
+        print(f"CLIENT_SECRET1_CONTENT の解析に失敗しました。JSON形式を確認してください: {e}")
+        return None
+        
     with open("client_secret.json", "w", encoding="utf-8") as f:
-        f.write(CLIENT_SECRET1_CONTENT)
-
+        json.dump(client_secret_data, f)
+        
     creds = None
     if os.path.exists(TOKEN_PATH):
         creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES_DRIVE)
@@ -142,19 +157,21 @@ def authenticate_google_drive():
 
 def upload_file_to_drive(file_path, file_name, folder_id=None):
     service = authenticate_google_drive()
-    file_metadata = {'name': file_name}
-    if folder_id:
-        file_metadata['parents'] = [folder_id]
-    media = MediaFileUpload(file_path, resumable=True)
-    file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-    print(f"Uploaded to Drive: {file_name}, File ID: {file['id']}")
-    return file['id']
+    if service:
+        file_metadata = {'name': file_name}
+        if folder_id:
+            file_metadata['parents'] = [folder_id]
+        media = MediaFileUpload(file_path, resumable=True)
+        file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        print(f"Uploaded to Drive: {file_name}, File ID: {file['id']}")
+        return file['id']
+    else:
+        raise ConnectionError("Google Drive認証情報が無効です。")
 
 # ---- ファイルサイズ取得 ----
 def get_file_size(file_path):
     return os.path.getsize(file_path)
 
-# ---- ローカルリクエスト処理 ----
 # ---- ローカルリクエスト処理 ----
 def process_local_requests():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
@@ -175,7 +192,6 @@ def process_local_requests():
             with open(local_file, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # Python辞書として評価し、失敗した場合はエラーとして扱う
             request = ast.literal_eval(content)
             
             if not isinstance(request, dict):
@@ -214,20 +230,16 @@ def process_local_requests():
             local_file
         ]
         print(f"Running command: {' '.join(command)}")
-        # download.pyの実行
         subprocess.run(command)
 
         downloaded_file_path = os.path.join(folder_path, f"{file_name_clean}.{request['format']}")
         try:
-            # ダウンロードファイルが存在するか確認
             if os.path.exists(downloaded_file_path):
                 file_size = get_file_size(downloaded_file_path)
                 print(f"File size: {file_size / (1024*1024):.2f} MB")
                 
-                # 通知処理を辞書を渡して実行
                 tuuti(request)
 
-                # FTPアップロード
                 ftp = ftp_connect()
                 try:
                     ftp_file_path = f"/upload_contents/{ID}/{file_name_clean}.{request['format']}"
@@ -235,22 +247,17 @@ def process_local_requests():
                 finally:
                     ftp.quit()
 
-                # Google Driveアップロード
                 upload_file_to_drive(downloaded_file_path, f"{file_name_clean}.{request['format']}")
 
-                # 正常終了後、ダウンロードしたファイルとリクエストファイルを削除
                 os.remove(downloaded_file_path)
             
-            # リクエストファイルは正常に処理されたので削除
             if os.path.exists(local_file):
                 os.remove(local_file)
 
         except Exception as e:
             print(f"Error processing {local_file}: {e}")
-            # エラー時もクリーンアップを実行
             if os.path.exists(downloaded_file_path):
                 os.remove(downloaded_file_path)
-            # リクエストファイルはエラーが発生したので削除
             if os.path.exists(local_file):
                 os.remove(local_file)
 
