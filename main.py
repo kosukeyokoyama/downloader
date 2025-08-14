@@ -173,14 +173,14 @@ def get_file_size(file_path):
     return os.path.getsize(file_path)
 
 # ---- ローカルリクエスト処理 ----
+
 def process_local_requests():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-    exe_to_run = "python3"                  # ここで実行する Python を指定
-    script_path = "./scripts/download.py"   # 実行するスクリプトのパス
-    folder_path = DOWNLOAD_DIR              # ダウンロード先フォルダ
-
+    exe_to_run = "python3"
+    script_path = "./scripts/download.py"
+    folder_path = DOWNLOAD_DIR
 
     for file_name in os.listdir(LOCAL_REQUEST_DIR):
         if not file_name.endswith('.json'):
@@ -189,15 +189,16 @@ def process_local_requests():
         request = None
         try:
             with open(local_file, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-        # Python辞書リテラルを安全に評価
-            request = ast.literal_eval(content)
+                request = json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"Error processing {local_file}: Invalid JSON format. Details: {e}")
+            os.remove(local_file)
+            continue
         except Exception as e:
-            print(f"Failed to parse local JSON {file_name}: {e}")
+            print(f"An unexpected error occurred while processing {local_file}: {e}")
             os.remove(local_file)
             continue
 
-    # ここから以前の処理と同じ
         url = request.get('url')
         if not isinstance(url, str):
             print(f"Invalid URL type in request: {type(url)}")
@@ -212,7 +213,7 @@ def process_local_requests():
         to = request['gmail_address']
         mode = {'mp3': 'audio', 'mp4': 'video'}.get(request['format'])
         if mode is None or file_name_clean == "":
-            print(f"Unsupported format: {request['format']}")
+            print(f"Unsupported format or invalid filename: {request.get('format', 'N/A')}")
             os.remove(local_file)
             continue
 
@@ -228,16 +229,13 @@ def process_local_requests():
         print(f"Running command: {' '.join(command)}")
         subprocess.run(command)
 
-
         downloaded_file_path = os.path.join(folder_path, f"{file_name_clean}.{request['format']}")
         try:
             file_size = get_file_size(downloaded_file_path)
             print(f"File size: {file_size / (1024*1024):.2f} MB")
 
-            # Gmail通知
             tuuti(request)
 
-            # FTPアップロード
             ftp = ftp_connect()
             try:
                 ftp_file_path = f"/upload_contents/{ID}/{file_name_clean}.{request['format']}"
@@ -245,13 +243,14 @@ def process_local_requests():
             finally:
                 ftp.quit()
 
-            # Google Drive アップロード
             upload_file_to_drive(downloaded_file_path, f"{file_name_clean}.{request['format']}")
 
             os.remove(downloaded_file_path)
 
         except Exception as e:
             print(f"Error processing {local_file}: {e}")
+            os.remove(downloaded_file_path) # Clean up downloaded file even on error
+            os.remove(local_file) # Clean up the request file as well
 
 # ---- メイン処理 ----
 def main_loop():
