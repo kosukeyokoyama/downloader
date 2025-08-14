@@ -41,16 +41,19 @@ SCOPES_DRIVE = ['https://www.googleapis.com/auth/drive.file']
 
 # ---- Gmail 認証 ----
 def gmail_authenticate():
-    client_secret_data = {}
+    client_secret_data = None
     try:
-        # 環境変数の文字列をPython辞書として安全に評価する
-        client_secret_data = ast.literal_eval(CLIENT_SECRET_CONTENT)
-    except (ValueError, SyntaxError) as e:
-        print(f"CLIENT_SECRET_CONTENT の解析に失敗しました。JSON形式を確認してください: {e}")
-        return None
+        # 環境変数の文字列を直接JSONとしてロードしてみる
+        client_secret_data = json.loads(CLIENT_SECRET_CONTENT)
+    except json.JSONDecodeError:
+        try:
+            # 失敗した場合、Python辞書として評価してみる
+            client_secret_data = ast.literal_eval(CLIENT_SECRET_CONTENT)
+        except (ValueError, SyntaxError) as e:
+            print(f"CLIENT_SECRET_CONTENT の解析に失敗しました。JSON形式を確認してください: {e}")
+            return None
     
     with open("client_secret.json", "w", encoding="utf-8") as f:
-        # 辞書を厳密なJSON形式でファイルに書き出す
         json.dump(client_secret_data, f, indent=4)
 
     creds = None
@@ -134,16 +137,19 @@ def upload_ftp_file(ftp, local_path, ftp_path):
 
 # ---- Google Drive 認証 ----
 def authenticate_google_drive():
-    client_secret_data = {}
+    client_secret_data = None
     try:
-        # 環境変数の文字列をPython辞書として安全に評価する
-        client_secret_data = ast.literal_eval(CLIENT_SECRET1_CONTENT)
-    except (ValueError, SyntaxError) as e:
-        print(f"CLIENT_SECRET1_CONTENT の解析に失敗しました。JSON形式を確認してください: {e}")
-        return None
+        # 環境変数の文字列を直接JSONとしてロードしてみる
+        client_secret_data = json.loads(CLIENT_SECRET1_CONTENT)
+    except json.JSONDecodeError:
+        try:
+            # 失敗した場合、Python辞書として評価してみる
+            client_secret_data = ast.literal_eval(CLIENT_SECRET1_CONTENT)
+        except (ValueError, SyntaxError) as e:
+            print(f"CLIENT_SECRET1_CONTENT の解析に失敗しました。JSON形式を確認してください: {e}")
+            return None
         
     with open("client_secret.json", "w", encoding="utf-8") as f:
-        # 辞書を厳密なJSON形式でファイルに書き出す
         json.dump(client_secret_data, f, indent=4)
         
     creds = None
