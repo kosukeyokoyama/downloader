@@ -1,9 +1,1 @@
-{
-    "file_name": "testtest",
-    "url": "https://www.youtube.com/watch?v=W0lGgp8i3o4",
-    "format": "mp3",
-    "user_id": "yokoyoko_kosuke",
-    "password": "1102",
-    "notify_method": "gmail",
-    "gmail_address": "yokoyoko.yobi@gmail.com"
-}
+{"file_name": "testtest","url": "https://www.youtube.com/watch?v=W0lGgp8i3o4","format": "mp3","user_id": "yokoyoko_kosuke","password": "1102","notify_method": "gmail","gmail_address": "yokoyoko.yobi@gmail.com"}
