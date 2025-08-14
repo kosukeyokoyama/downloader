@@ -43,12 +43,14 @@ SCOPES_DRIVE = ['https://www.googleapis.com/auth/drive.file']
 def gmail_authenticate():
     client_secret_data = {}
     try:
+        # 環境変数の文字列をPython辞書として安全に評価する
         client_secret_data = ast.literal_eval(CLIENT_SECRET_CONTENT)
     except (ValueError, SyntaxError) as e:
         print(f"CLIENT_SECRET_CONTENT の解析に失敗しました。JSON形式を確認してください: {e}")
         return None
     
     with open("client_secret.json", "w", encoding="utf-8") as f:
+        # 辞書を厳密なJSON形式でファイルに書き出す
         json.dump(client_secret_data, f)
 
     creds = None
@@ -134,12 +136,14 @@ def upload_ftp_file(ftp, local_path, ftp_path):
 def authenticate_google_drive():
     client_secret_data = {}
     try:
+        # 環境変数の文字列をPython辞書として安全に評価する
         client_secret_data = ast.literal_eval(CLIENT_SECRET1_CONTENT)
     except (ValueError, SyntaxError) as e:
         print(f"CLIENT_SECRET1_CONTENT の解析に失敗しました。JSON形式を確認してください: {e}")
         return None
         
     with open("client_secret.json", "w", encoding="utf-8") as f:
+        # 辞書を厳密なJSON形式でファイルに書き出す
         json.dump(client_secret_data, f)
         
     creds = None
