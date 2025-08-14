@@ -23,10 +23,11 @@ jobs:
         run: |
           curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o ffmpeg.tar.xz
           tar -xf ffmpeg.tar.xz
-          # 展開されたディレクトリ名を取得して移動
           FFMPEG_DIR=$(ls -d ffmpeg-*-amd64-static)
           echo "FFMPEG_DIR=$FFMPEG_DIR"
-          mv "$FFMPEG_DIR" ffmpeg
+          mkdir -p ffmpeg
+          cp "$FFMPEG_DIR/ffmpeg" ffmpeg/
+          cp "$FFMPEG_DIR/ffprobe" ffmpeg/
           chmod +x ffmpeg/ffmpeg ffmpeg/ffprobe
 
       - name: Add ffmpeg directory to PATH
