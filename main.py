@@ -153,15 +153,18 @@ def process_local_requests():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
+    exe_to_run = "python3"                  # ここで実行する Python を指定
+    script_path = "./scripts/download.py"   # 実行するスクリプトのパス
+    folder_path = DOWNLOAD_DIR              # ダウンロード先フォルダ
+
     for file_name in os.listdir(LOCAL_REQUEST_DIR):
         if not file_name.endswith('.json'):
             continue
         local_file = os.path.join(LOCAL_REQUEST_DIR, file_name)
         try:
             with open(local_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-            # 先頭・末尾のシングルクオートを削除
-                content = content.strip()
+                content = f.read().strip()
+                # 先頭・末尾のシングルクオートを削除
                 if content.startswith("'") and content.endswith("'"):
                     content = content[1:-1]
                 request = json.loads(content)
@@ -170,6 +173,11 @@ def process_local_requests():
             os.remove(local_file)
             continue
 
+        url = request.get('url')
+        if not isinstance(url, str):
+            print(f"Invalid URL type in request: {type(url)}")
+            os.remove(local_file)
+            continue
 
         file_name_clean = re.sub(r'[<>:"/\\|?*]', '', request['file_name'])
         global ID, id, to, password
@@ -194,6 +202,7 @@ def process_local_requests():
         ]
         print(f"Running command: {' '.join(command)}")
         subprocess.run(command)
+
 
         downloaded_file_path = os.path.join(folder_path, f"{file_name_clean}.{request['format']}")
         try:
