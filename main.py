@@ -70,27 +70,33 @@ def send_gmail_notification(to_addr, subject, body):
     message = create_message(to_addr, subject, body)
     send_message(service, 'me', message)
 
+import ast
+
 def safe_load_json(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read().strip()
 
-        # 先頭・末尾のシングル/ダブルクオート除去
+        # 先頭・末尾のクオートは無視
         if (content.startswith("'") and content.endswith("'")) or \
            (content.startswith('"') and content.endswith('"')):
             content = content[1:-1]
 
-        # 改行・タブ・余計なスペース除去
+        # 改行・タブ除去
         content = content.replace("\n", "").replace("\r", "").replace("\t", "").strip()
 
-        # シングルクオートで囲まれたキー・値をダブルクオートに変換
-        content = re.sub(r"(?<!\\)'", '"', content)
+        # Python辞書リテラルを安全に評価して辞書化
+        data = ast.literal_eval(content)
 
-        return json.loads(content)
+        # 辞書をJSON文字列に変換してJSONとして扱う
+        json_str = json.dumps(data)
+        return json.loads(json_str)
+
     except Exception as e:
         print(f"Failed to parse JSON {file_path}: {e}")
         os.remove(file_path)
         return None
+e
 
 # ---- 通知 ----
 def tuuti(file_path):
