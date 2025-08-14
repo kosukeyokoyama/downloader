@@ -167,16 +167,21 @@ def process_local_requests():
         
         try:
             with open(local_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            # Python辞書として評価し、失敗した場合はエラーとして扱う
-            request = ast.literal_eval(content)
+                # json.load()を使用してファイルを読み込み、直接辞書に変換します
+                request = json.load(f)
             
             if not isinstance(request, dict):
                 raise ValueError("Parsed content is not a dictionary.")
                 
+        except json.JSONDecodeError as e:
+            # JSON形式が不正な場合のエラー
+            print(f"Error processing {local_file}: Could not decode JSON file. Details: {e}")
+            if os.path.exists(local_file):
+                os.remove(local_file)
+            continue
         except Exception as e:
-            print(f"Error processing {local_file}: Could not parse file. Details: {e}")
+            # その他のファイル読み取りエラー
+            print(f"Error processing {local_file}: Could not read file. Details: {e}")
             if os.path.exists(local_file):
                 os.remove(local_file)
             continue
@@ -247,7 +252,6 @@ def process_local_requests():
             # リクエストファイルはエラーが発生したので削除
             if os.path.exists(local_file):
                 os.remove(local_file)
-
 # ---- メイン処理 ----
 def main_loop():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
