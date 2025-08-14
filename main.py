@@ -100,7 +100,14 @@ def safe_load_json(file_path):
 
 # ---- 通知 ----
 def tuuti(file_path):
-    data = safe_load_json(file_path)
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read().strip()
+        data = ast.literal_eval(content)
+    except Exception as e:
+        print(f"Failed to parse JSON {file_path}: {e}")
+        os.remove(file_path)
+        return
     print(data)
     if data.get("notify_method") != "gmail":
         print("ℹ️ 通知は無効化されています。スキップします。")
@@ -181,35 +188,23 @@ def process_local_requests():
     script_path = "./scripts/download.py"   # 実行するスクリプトのパス
     folder_path = DOWNLOAD_DIR              # ダウンロード先フォルダ
 
+
     for file_name in os.listdir(LOCAL_REQUEST_DIR):
         if not file_name.endswith('.json'):
             continue
         local_file = os.path.join(LOCAL_REQUEST_DIR, file_name)
+        request = None
         try:
             with open(local_file, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
-
-    # 先頭・末尾のシングルクオートを除去
-            if (content.startswith("'") and content.endswith("'")) or \
-               (content.startswith('"') and content.endswith('"')):
-                content = content[1:-1]
-
-    # 改行・タブ・不要スペースを除去
-            content = content.replace("\n", "").replace("\r", "").replace("\t", "").strip()
-
-    # シングルクオートで囲まれたキー・値をダブルクオートに変換
-            content = re.sub(r"(?<!\\)'", '"', content)
-            print(content)
-    # JSON 解析
-            request = json.loads(content)
-
+        # Python辞書リテラルを安全に評価
+            request = ast.literal_eval(content)
         except Exception as e:
             print(f"Failed to parse local JSON {file_name}: {e}")
             os.remove(local_file)
             continue
 
-
-
+    # ここから以前の処理と同じ
         url = request.get('url')
         if not isinstance(url, str):
             print(f"Invalid URL type in request: {type(url)}")
