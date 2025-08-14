@@ -76,11 +76,14 @@ def send_gmail_notification(to_addr, subject, body):
 
 # ---- 通知 ----
 # 変更点: 引数をファイルパスではなく、解析済みの辞書 (data_dict) に変更
-def tuuti():
-    global data
-    print("tuuti:" + str(data))
+def tuuti(data_dict):
+    print("tuuti:" + str(data_dict)) # 修正: data_dict を表示
+    if data_dict.get("notify_method") != "gmail":
+        print("ℹ️ 通知は無効化されています。スキップします。")
+        return
+
     global id, password, to
-    to_addr = data_dict['gmail_address']  # 引数から直接取得するように変更
+    to_addr = data_dict['gmail_address'] # 引数から直接取得するように変更
     subject = "✅ ダウンロード完了"
     file = f"{data_dict['file_name']}.{data_dict['format']}"
     file_encoded = urllib.parse.quote(file)
@@ -94,7 +97,6 @@ def tuuti():
     )
     send_gmail_notification(to_addr, subject, body)
     print("✅ Gmail通知送信完了")
-
 
 # ---- FTP ----
 def ftp_connect(retries=5, delay=5):
@@ -148,8 +150,7 @@ def get_file_size(file_path):
     return os.path.getsize(file_path)
 
 # ---- ローカルリクエスト処理 ----
-# ---- ローカルリクエスト処理 ----
-def process_local_requests():
+# ---- ローカルリクエスト処理 ----def process_local_requests():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
@@ -166,28 +167,22 @@ def process_local_requests():
         
         try:
             with open(local_file, 'r', encoding='utf-8') as f:
-                # json.load()を使用してファイルを読み込み、直接辞書に変換します
-                request = json.load(f)
+                content = f.read()
+            
+            # Python辞書として評価し、失敗した場合はエラーとして扱う
+            request = ast.literal_eval(content)
             
             if not isinstance(request, dict):
                 raise ValueError("Parsed content is not a dictionary.")
                 
-        except json.JSONDecodeError as e:
-            # JSON形式が不正な場合のエラー
-            print(f"Error processing {local_file}: Could not decode JSON file. Details: {e}")
-            if os.path.exists(local_file):
-                os.remove(local_file)
-            continue
         except Exception as e:
-            # その他のファイル読み取りエラー
-            print(f"Error processing {local_file}: Could not read file. Details: {e}")
+            print(f"Error processing {local_file}: Could not parse file. Details: {e}")
             if os.path.exists(local_file):
                 os.remove(local_file)
             continue
 
         # グローバル変数に値をセット
-        global ID, id, to, password,data
-        data = request
+        global ID, id, to, password
         ID = request.get('user_id')
         id = ID
         password = request.get('password')
@@ -224,7 +219,7 @@ def process_local_requests():
                 print(f"File size: {file_size / (1024*1024):.2f} MB")
                 
                 # 通知処理を辞書を渡して実行
-                tuuti()
+                tuuti(request)
 
                 # FTPアップロード
                 ftp = ftp_connect()
@@ -252,6 +247,8 @@ def process_local_requests():
             # リクエストファイルはエラーが発生したので削除
             if os.path.exists(local_file):
                 os.remove(local_file)
+
+
 # ---- メイン処理 ----
 def main_loop():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
