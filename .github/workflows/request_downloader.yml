@@ -46,25 +46,7 @@ jobs:
         run: |
           source .venv/bin/activate
           pip install --upgrade pip
-          pip install requests google-auth google-auth-oauthlib google-api-python-client yt_dlp pywebpush jq
-
-      - name: Write secrets to local files
-        run: |
-          mkdir -p cookies
-          echo "${{ secrets.CLIENT_SECRET }}" | base64 --decode > client_secret.json
-          echo "${{ secrets.CLIENT_SECRET1 }}" | base64 --decode > client_secret1.json
-          echo "${{ secrets.TOKEN }}" | base64 --decode > token.json
-          echo "${{ secrets.TOKEN1 }}" | base64 --decode > token1.json
-          echo "${{ secrets.YT_COOKIE }}" | base64 --decode > cookies/youtube_cookies.txt
-        shell: bash
-      
-      - name: Debug JSON files
-        run: |
-          echo "Validating client_secret.json..."
-          jq . client_secret.json
-          echo "Validating client_secret1.json..."
-          jq . client_secret1.json
-        shell: bash
+          pip install requests google-auth google-auth-oauthlib google-api-python-client yt_dlp pywebpush
 
       - name: Run downloader script
         env:
@@ -73,10 +55,11 @@ jobs:
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USER: ${{ secrets.FTP_USER }}
           FTP_PASS: ${{ secrets.FTP_PASS }}
-          GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
-          GOOGLE_DRIVE_CRED: ${{ secrets.GOOGLE_DRIVE_CRED }}
-          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-          CLIENT_SECRET1: ${{ secrets.CLIENT_SECRET1 }}
+          GMAIL_TOKEN_B64: ${{ secrets.GMAIL_TOKEN }}
+          GOOGLE_DRIVE_CRED_B64: ${{ secrets.GOOGLE_DRIVE_CRED }}
+          CLIENT_SECRET_B64: ${{ secrets.CLIENT_SECRET }}
+          CLIENT_SECRET1_B64: ${{ secrets.CLIENT_SECRET1 }}
+          YT_COOKIE_B64: ${{ secrets.YT_COOKIE }}
         run: |
           source .venv/bin/activate
           python main.py
