@@ -23,7 +23,8 @@ jobs:
         run: |
           curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o ffmpeg.tar.xz
           tar -xf ffmpeg.tar.xz
-          mv ffmpeg-*-amd64-static ffmpeg
+          FFMPEG_DIR=$(find . -maxdepth 1 -type d -name "ffmpeg-*-amd64-static")
+          mv "$FFMPEG_DIR" ffmpeg
           chmod +x ffmpeg/ffmpeg ffmpeg/ffprobe
 
       - name: Add ffmpeg directory to PATH
