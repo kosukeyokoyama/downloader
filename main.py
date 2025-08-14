@@ -13,9 +13,6 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
 import pathlib
-with open("upload_requests/upload_request_request_689ccef3211ff6.58956454.json", "r", encoding="utf-8") as f:
-    content = f.read()
-print(repr(content))
 # ---- 環境変数から Secrets を読み込む ----
 FTP_HOST = os.environ["FTP_HOST"]
 FTP_USER = os.environ["FTP_USER"]
@@ -175,7 +172,7 @@ def process_local_requests():
 
     # シングルクオートで囲まれたキー・値をダブルクオートに変換
             content = re.sub(r"(?<!\\)'", '"', content)
-
+            print(content)
     # JSON 解析
             request = json.loads(content)
 
