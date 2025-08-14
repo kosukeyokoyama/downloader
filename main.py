@@ -100,6 +100,7 @@ def safe_load_json(file_path):
 
 # ---- 通知 ----
 # tuuti を修正
+# tuuti を修正
 def tuuti(data_dict):
     print(data_dict)
     if data_dict.get("notify_method") != "gmail":
@@ -121,6 +122,7 @@ def tuuti(data_dict):
     )
     send_gmail_notification(to_addr, subject, body)
     print("✅ Gmail通知送信完了")
+
 
 # ---- FTP ----
 def ftp_connect(retries=5, delay=5):
@@ -233,7 +235,7 @@ def process_local_requests():
             print(f"File size: {file_size / (1024*1024):.2f} MB")
 
             # Gmail通知
-            tuuti(local_file)
+            tuuti(request)
 
             # FTPアップロード
             ftp = ftp_connect()
