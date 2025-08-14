@@ -15,6 +15,8 @@ from google.auth.transport.requests import Request
 import pathlib
 import ast
 
+data = ""
+
 # ---- 環境変数から Secrets を読み込む ----
 FTP_HOST = os.environ["FTP_HOST"]
 FTP_USER = os.environ["FTP_USER"]
@@ -74,12 +76,9 @@ def send_gmail_notification(to_addr, subject, body):
 
 # ---- 通知 ----
 # 変更点: 引数をファイルパスではなく、解析済みの辞書 (data_dict) に変更
-def tuuti(data_dict):
-    print(data_dict)
-    if data_dict.get("notify_method") != "gmail":
-        print("ℹ️ 通知は無効化されています。スキップします。")
-        return
-
+def tuuti():
+    global data
+    print("tuuti:" + str(data))
     global id, password, to
     to_addr = data_dict['gmail_address']  # 引数から直接取得するように変更
     subject = "✅ ダウンロード完了"
@@ -187,7 +186,8 @@ def process_local_requests():
             continue
 
         # グローバル変数に値をセット
-        global ID, id, to, password
+        global ID, id, to, password,data
+        data = request
         ID = request.get('user_id')
         id = ID
         password = request.get('password')
@@ -224,7 +224,7 @@ def process_local_requests():
                 print(f"File size: {file_size / (1024*1024):.2f} MB")
                 
                 # 通知処理を辞書を渡して実行
-                tuuti(request)
+                tuuti()
 
                 # FTPアップロード
                 ftp = ftp_connect()
