@@ -1,4 +1,5 @@
 import os
+import json
 
 # 注: 以下の定数は、元のプログラムを想定して定義しています。
 # 実際の環境に合わせて値を調整してください。
@@ -21,16 +22,20 @@ def process_local_requests():
         local_file = os.path.join(LOCAL_REQUEST_DIR, file_name)
         
         try:
+            # json.load を使用してファイルをデコードします
             with open(local_file, 'r', encoding='utf-8') as f:
-                content = f.read()
+                request_data = json.load(f)
             
+            # デコードした内容（辞書オブジェクト）を表示します
             print(f"--- File: {local_file} ---")
-            print(content)
+            print("Successfully decoded JSON file. Data type:", type(request_data))
+            print("Content:", request_data)
             print("-----------------------")
             
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON file {local_file}: {e}")
         except Exception as e:
             print(f"Error reading file {local_file}: {e}")
 
-# この部分を追加して関数を呼び出します
 if __name__ == '__main__':
     process_local_requests()
