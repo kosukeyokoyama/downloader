@@ -35,9 +35,6 @@ jobs:
           cp "$(which ffmpeg)" ffmpeg/
           cp "$(which ffprobe)" ffmpeg/
 
-      - name: Add ffmpeg and ffprobe to PATH
-        run: echo "${{ github.workspace }}/ffmpeg" >> $GITHUB_PATH
-
       - name: Set up Python virtual environment
         run: python -m venv .venv
 
@@ -63,6 +60,7 @@ jobs:
 
       - name: Run downloader script
         env:
+          FFMPEG_LOCATION: ${{ github.workspace }}/ffmpeg/ffmpeg
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USER: ${{ secrets.FTP_USER }}
           FTP_PASS: ${{ secrets.FTP_PASS }}
