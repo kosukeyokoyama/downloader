@@ -32,7 +32,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
           mkdir -p ffmpeg
-          which ffmpeg | xargs -I {} cp {} ffmpeg/
+          cp "$(which ffmpeg)" ffmpeg/
+          cp "$(which ffprobe)" ffmpeg/
 
       - name: Add ffmpeg to PATH
         run: echo "${{ github.workspace }}/ffmpeg" >> $GITHUB_PATH
