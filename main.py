@@ -163,7 +163,7 @@ def process_local_requests():
         local_file = os.path.join(LOCAL_REQUEST_DIR, file_name)
         try:
             with open(local_file, 'r', encoding='utf-8') as f:
-            content = f.read().strip()
+                content = f.read().strip()
 
     # 先頭・末尾のシングルクオートを除去
         if (content.startswith("'") and content.endswith("'")) or \
