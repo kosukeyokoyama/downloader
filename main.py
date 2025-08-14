@@ -149,6 +149,7 @@ def get_file_size(file_path):
     return os.path.getsize(file_path)
 
 # ---- ローカルリクエスト処理 ----
+# ---- ローカルリクエスト処理 ----
 def process_local_requests():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -173,6 +174,15 @@ def process_local_requests():
                 except json.JSONDecodeError:
                     # JSONデコードに失敗した場合、ast.literal_evalでPython辞書として評価
                     request = ast.literal_eval(content)
+                
+            # ここから追加: 確実にJSON形式に変換して上書き保存
+            with open(local_file, 'w', encoding='utf-8') as f:
+                json.dump(request, f, indent=4)
+            
+            # 再度、ファイルの内容を辞書として読み込む（念のため）
+            with open(local_file, 'r', encoding='utf-8') as f:
+                request = json.load(f)
+                
         except Exception as e:
             print(f"Error processing {local_file}: Could not parse file. Details: {e}")
             if os.path.exists(local_file):
