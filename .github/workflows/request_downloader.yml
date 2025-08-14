@@ -32,8 +32,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
           mkdir -p ffmpeg
-          cp "$(which ffmpeg)" ffmpeg/
-          cp "$(which ffprobe)" ffmpeg/
+          cp "$(which ffmpeg)" ffmpeg/ffmpeg
+          cp "$(which ffprobe)" ffmpeg/ffprobe
+
+      - name: Add ffmpeg directory to PATH
+        run: echo "${{ github.workspace }}/ffmpeg" >> $GITHUB_PATH
 
       - name: Set up Python virtual environment
         run: python -m venv .venv
