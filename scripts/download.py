@@ -3,9 +3,11 @@ import sys
 import os
 import time
 import glob
+
 if len(sys.argv) > 2:
     out_dir = sys.argv[2]
     os.makedirs(out_dir, exist_ok=True)
+
 def resource_path(relative_path):
     base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
@@ -17,7 +19,9 @@ def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
     filename = os.path.join(output_dir, name)
     mp3_path = filename + '.mp3'
     url = sanitize_input(url)
-    youtube_cookie = resource_path("cookies/youtube_cookies.txt")
+
+    # シークレット対応クッキー
+    youtube_cookie = os.environ.get("YT_COOKIE_FILE", resource_path("cookies/youtube_cookies.txt"))
     nico_cookie = resource_path("cookies/niconico_cookies.txt")
 
     site_specific_opts = {}
@@ -29,24 +33,23 @@ def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
     ffmpeg_location = os.environ.get('FFMPEG_LOCATION', None)
 
     ydl_opts = {
-    'format': 'bestaudio/best',
-    'outtmpl': filename,
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    }],
-    'noplaylist': True,
-    'quiet': False,
-    'socket_timeout': 180,
-    'retries': retries,
-    'fragment_retries': retries,
-    **site_specific_opts
-}
+        'format': 'bestaudio/best',
+        'outtmpl': filename,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'noplaylist': True,
+        'quiet': False,
+        'socket_timeout': 180,
+        'retries': retries,
+        'fragment_retries': retries,
+        **site_specific_opts
+    }
 
     if ffmpeg_location:
         ydl_opts['ffmpeg_location'] = ffmpeg_location
-
 
     for attempt in range(retries):
         try:
@@ -72,7 +75,8 @@ def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
 def download_video(url, output_dir, name, retries=5, sleep_sec=5):
     filename = os.path.join(output_dir, name)
     url = sanitize_input(url)
-    youtube_cookie = resource_path("cookies/youtube_cookies.txt")
+
+    youtube_cookie = os.environ.get("YT_COOKIE_FILE", resource_path("cookies/youtube_cookies.txt"))
     nico_cookie = resource_path("cookies/niconico_cookies.txt")
 
     site_specific_opts = {}
@@ -84,17 +88,16 @@ def download_video(url, output_dir, name, retries=5, sleep_sec=5):
     ffmpeg_location = os.environ.get('FFMPEG_LOCATION', None)
 
     ydl_opts = {
-    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-    'outtmpl': filename,
-    'merge_output_format': 'mp4',
-    'noplaylist': True,
-    'quiet': False,
-    'socket_timeout': 180,
-    'retries': retries,
-    'fragment_retries': retries,
-    **site_specific_opts
-}
-
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'outtmpl': filename,
+        'merge_output_format': 'mp4',
+        'noplaylist': True,
+        'quiet': False,
+        'socket_timeout': 180,
+        'retries': retries,
+        'fragment_retries': retries,
+        **site_specific_opts
+    }
 
     if ffmpeg_location:
         ydl_opts['ffmpeg_location'] = ffmpeg_location
@@ -125,7 +128,7 @@ def download_video(url, output_dir, name, retries=5, sleep_sec=5):
 
 if __name__ == '__main__':
     if len(sys.argv) < 6:
-        sys.exit("Usage: python download.py <URL> <Download Directory> <Name> <mode: audio|video> <local_json>")
+        sys.exit("Usage: python main.py <URL> <Download Directory> <Name> <mode: audio|video> <local_json>")
 
     url = sys.argv[1]
     download_dir = sys.argv[2]
