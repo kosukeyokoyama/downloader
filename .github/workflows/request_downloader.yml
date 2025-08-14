@@ -23,7 +23,9 @@ jobs:
         run: |
           curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o ffmpeg.tar.xz
           tar -xf ffmpeg.tar.xz
-          FFMPEG_DIR=$(find . -maxdepth 1 -type d -name "ffmpeg-*-amd64-static")
+          # 展開されたディレクトリ名を取得して移動
+          FFMPEG_DIR=$(ls -d ffmpeg-*-amd64-static)
+          echo "FFMPEG_DIR=$FFMPEG_DIR"
           mv "$FFMPEG_DIR" ffmpeg
           chmod +x ffmpeg/ffmpeg ffmpeg/ffprobe
 
