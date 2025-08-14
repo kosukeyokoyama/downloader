@@ -161,20 +161,20 @@ def process_local_requests():
         if not file_name.endswith('.json'):
             continue
         local_file = os.path.join(LOCAL_REQUEST_DIR, file_name)
-        for file_name in os.listdir(LOCAL_REQUEST_DIR):
-            if not file_name.endswith('.json'):
-                continue
-            local_file = os.path.join(LOCAL_REQUEST_DIR, file_name)
-            try:
-                with open(local_file, 'r', encoding='utf-8') as f:
-                    content = f.read().strip()
-                    if content.startswith("'") and content.endswith("'"):
-                        content = content[1:-1]
-                    request = json.loads(content)
-            except Exception as e:
-                print(f"Failed to parse local JSON {file_name}: {e}")
-                os.remove(local_file)
-                continue
+        try:
+            with open(local_file, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+            # 先頭・末尾のシングルクオートを除去
+                if content.startswith("'") and content.endswith("'"):
+                    content = content[1:-1]
+            # 改行文字をすべて除去
+                content = content.replace("\n", "")
+                request = json.loads(content)
+        except Exception as e:
+            print(f"Failed to parse local JSON {file_name}: {e}")
+            os.remove(local_file)
+            continue
+
 
 
         url = request.get('url')
