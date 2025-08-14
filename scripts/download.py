@@ -84,13 +84,9 @@ def download_video(url, output_dir, name, retries=5, sleep_sec=5):
     ffmpeg_location = os.environ.get('FFMPEG_LOCATION', None)
 
     ydl_opts = {
-    'format': 'bestaudio/best',
+    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
     'outtmpl': filename,
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    }],
+    'merge_output_format': 'mp4',
     'noplaylist': True,
     'quiet': False,
     'socket_timeout': 180,
@@ -98,6 +94,7 @@ def download_video(url, output_dir, name, retries=5, sleep_sec=5):
     'fragment_retries': retries,
     **site_specific_opts
 }
+
 
     if ffmpeg_location:
         ydl_opts['ffmpeg_location'] = ffmpeg_location
