@@ -174,6 +174,7 @@ def get_file_size(file_path):
 
 # ---- ローカルリクエスト処理 ----
 
+# ---- ローカルリクエスト処理 ----
 def process_local_requests():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -193,6 +194,7 @@ def process_local_requests():
         # 読み込みに失敗した場合は次のファイルへ
         if request is None:
             continue
+
         url = request.get('url')
         if not isinstance(url, str):
             print(f"Invalid URL type in request: {type(url)}")
@@ -243,8 +245,11 @@ def process_local_requests():
 
         except Exception as e:
             print(f"Error processing {local_file}: {e}")
-            os.remove(downloaded_file_path) # Clean up downloaded file even on error
-            os.remove(local_file) # Clean up the request file as well
+            # エラー時もクリーンアップを実行
+            if os.path.exists(downloaded_file_path):
+                os.remove(downloaded_file_path)
+            if os.path.exists(local_file):
+                os.remove(local_file)
 
 # ---- メイン処理 ----
 def main_loop():
