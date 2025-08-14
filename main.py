@@ -150,7 +150,8 @@ def get_file_size(file_path):
     return os.path.getsize(file_path)
 
 # ---- ローカルリクエスト処理 ----
-# ---- ローカルリクエスト処理 ----def process_local_requests():
+# ---- ローカルリクエスト処理 ----
+def process_local_requests():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
