@@ -159,20 +159,17 @@ def process_local_requests():
         local_file = os.path.join(LOCAL_REQUEST_DIR, file_name)
         try:
             with open(local_file, 'r', encoding='utf-8') as f:
-                request = json.load(f)
+                content = f.read()
+            # 先頭・末尾のシングルクオートを削除
+                content = content.strip()
+                if content.startswith("'") and content.endswith("'"):
+                    content = content[1:-1]
+                request = json.loads(content)
         except Exception as e:
             print(f"Failed to parse local JSON {file_name}: {e}")
             os.remove(local_file)
             continue
 
-        folder_path = DOWNLOAD_DIR
-        exe_to_run = "python3"
-        script_path = "./scripts/download.py"
-        url = request.get('url')
-        if not isinstance(url, str):
-            print(f"Invalid URL type in request: {type(url)}")
-            os.remove(local_file)
-            continue
 
         file_name_clean = re.sub(r'[<>:"/\\|?*]', '', request['file_name'])
         global ID, id, to, password
