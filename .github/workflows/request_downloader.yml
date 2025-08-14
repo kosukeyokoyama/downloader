@@ -71,4 +71,4 @@ jobs:
           CLIENT_SECRET1: ${{ secrets.CLIENT_SECRET1 }}
         run: |
           source .venv/bin/activate
-          python test.py
+          python main.py
