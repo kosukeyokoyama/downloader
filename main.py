@@ -72,8 +72,27 @@ def send_gmail_notification(to_addr, subject, body):
 
 # ---- 通知 ----
 def tuuti(file_path):
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    local_file = os.path.join(file_path)
+    try:
+        with open(local_file, 'r', encoding='utf-8') as f:
+            content = f.read().strip()
+
+    # 先頭・末尾のシングルクオートを除去
+        if (content.startswith("'") and content.endswith("'")) or \
+           (content.startswith('"') and content.endswith('"')):
+            content = content[1:-1]
+    # 改行・タブ・不要スペースを除去
+        content = content.replace("\n", "").replace("\r", "").replace("\t", "").strip()
+
+    # シングルクオートで囲まれたキー・値をダブルクオートに変換
+        content = re.sub(r"(?<!\\)'", '"', content)
+        print(content)
+    # JSON 解析
+        request = json.loads(content)
+
+    except Exception as e:
+        print(f"Failed to parse local JSON {file_path}: {e}")
+        os.remove(local_file)
 
     if data.get("notify_method") != "gmail":
         print("ℹ️ 通知は無効化されています。スキップします。")
