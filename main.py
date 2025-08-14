@@ -18,13 +18,11 @@ import ast
 data = ""
 
 # ---- 環境変数から Secrets を読み込む ----
-FTP_HOST = os.environ["FTP_HOST"]
-FTP_USER = os.environ["FTP_USER"]
-FTP_PASS = os.environ["FTP_PASS"]
-
-CLIENT_SECRET_CONTENT = os.environ["CLIENT_SECRET"]
-CLIENT_SECRET1_CONTENT = os.environ["CLIENT_SECRET1"]
-
+CLIENT_SECRET_B64 = os.environ["CLIENT_SECRET_B64"]
+CLIENT_SECRET1_B64 = os.environ["CLIENT_SECRET1_B64"]
+GMAIL_TOKEN_B64 = os.environ["GMAIL_TOKEN_B64"]
+GOOGLE_DRIVE_CRED_B64 = os.environ["GOOGLE_DRIVE_CRED_B64"]
+YT_COOKIE_B64 = os.environ["YT_COOKIE_B64"]
 TOKEN_PATH = "token.json"
 TOKEN1_PATH = "token1.json"
 
