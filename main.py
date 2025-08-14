@@ -163,17 +163,26 @@ def process_local_requests():
         local_file = os.path.join(LOCAL_REQUEST_DIR, file_name)
         try:
             with open(local_file, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-            # 先頭・末尾のシングルクオートを除去
-                if content.startswith("'") and content.endswith("'"):
-                    content = content[1:-1]
-            # 改行文字をすべて除去
-                content = content.replace("\n", "")
-                request = json.loads(content)
-        except Exception as e:
-            print(f"Failed to parse local JSON {file_name}: {e}")
-            os.remove(local_file)
-            continue
+            content = f.read().strip()
+
+    # 先頭・末尾のシングルクオートを除去
+        if (content.startswith("'") and content.endswith("'")) or \
+           (content.startswith('"') and content.endswith('"')):
+            content = content[1:-1]
+
+    # 改行・タブ・不要スペースを除去
+        content = content.replace("\n", "").replace("\r", "").replace("\t", "").strip()
+
+    # シングルクオートで囲まれたキー・値をダブルクオートに変換
+        content = re.sub(r"(?<!\\)'", '"', content)
+
+    # JSON 解析
+        request = json.loads(content)
+
+    except Exception as e:
+        print(f"Failed to parse local JSON {file_name}: {e}")
+        os.remove(local_file)
+        continue
 
 
 
