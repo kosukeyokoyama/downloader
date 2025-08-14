@@ -70,30 +70,31 @@ def send_gmail_notification(to_addr, subject, body):
     message = create_message(to_addr, subject, body)
     send_message(service, 'me', message)
 
-# ---- 通知 ----
-def tuuti(file_path):
-    local_file = os.path.join(file_path)
+def safe_load_json(file_path):
     try:
-        with open(local_file, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read().strip()
 
-    # 先頭・末尾のシングルクオートを除去
+        # 先頭・末尾のシングル/ダブルクオート除去
         if (content.startswith("'") and content.endswith("'")) or \
            (content.startswith('"') and content.endswith('"')):
             content = content[1:-1]
-    # 改行・タブ・不要スペースを除去
+
+        # 改行・タブ・余計なスペース除去
         content = content.replace("\n", "").replace("\r", "").replace("\t", "").strip()
 
-    # シングルクオートで囲まれたキー・値をダブルクオートに変換
+        # シングルクオートで囲まれたキー・値をダブルクオートに変換
         content = re.sub(r"(?<!\\)'", '"', content)
-        print(content)
-    # JSON 解析
-        data = json.loads(content)
 
+        return json.loads(content)
     except Exception as e:
-        print(f"Failed to parse local JSON {file_path}: {e}")
-        os.remove(local_file)
+        print(f"Failed to parse JSON {file_path}: {e}")
+        os.remove(file_path)
+        return None
 
+# ---- 通知 ----
+def tuuti(file_path):
+    data = safe_load_json(file_path)
     if data.get("notify_method") != "gmail":
         print("ℹ️ 通知は無効化されています。スキップします。")
         os.remove(file_path)
