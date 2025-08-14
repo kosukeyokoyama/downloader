@@ -166,23 +166,23 @@ def process_local_requests():
                 content = f.read().strip()
 
     # 先頭・末尾のシングルクオートを除去
-        if (content.startswith("'") and content.endswith("'")) or \
-           (content.startswith('"') and content.endswith('"')):
-            content = content[1:-1]
+            if (content.startswith("'") and content.endswith("'")) or \
+               (content.startswith('"') and content.endswith('"')):
+                content = content[1:-1]
 
     # 改行・タブ・不要スペースを除去
-        content = content.replace("\n", "").replace("\r", "").replace("\t", "").strip()
+            content = content.replace("\n", "").replace("\r", "").replace("\t", "").strip()
 
     # シングルクオートで囲まれたキー・値をダブルクオートに変換
-        content = re.sub(r"(?<!\\)'", '"', content)
+            content = re.sub(r"(?<!\\)'", '"', content)
 
     # JSON 解析
-        request = json.loads(content)
+            request = json.loads(content)
 
-    except Exception as e:
-        print(f"Failed to parse local JSON {file_name}: {e}")
-        os.remove(local_file)
-        continue
+        except Exception as e:
+            print(f"Failed to parse local JSON {file_name}: {e}")
+            os.remove(local_file)
+            continue
 
 
 
