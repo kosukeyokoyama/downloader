@@ -77,13 +77,13 @@ def send_gmail_notification(to_addr, subject, body):
 # ---- 通知 ----
 # 変更点: 引数をファイルパスではなく、解析済みの辞書 (data_dict) に変更
 def tuuti(data_dict):
-    print("tuuti:" + str(data_dict)) # 修正: data_dict を表示
+    print("tuuti:" + str(data_dict))
     if data_dict.get("notify_method") != "gmail":
         print("ℹ️ 通知は無効化されています。スキップします。")
         return
 
     global id, password, to
-    to_addr = data_dict['gmail_address'] # 引数から直接取得するように変更
+    to_addr = data_dict['gmail_address']
     subject = "✅ ダウンロード完了"
     file = f"{data_dict['file_name']}.{data_dict['format']}"
     file_encoded = urllib.parse.quote(file)
@@ -95,8 +95,13 @@ def tuuti(data_dict):
         f"サイトのアクセスリンク: https://kosukedownload.kesug.com/index.php?id={data_dict['user_id']}&pass={data_dict['password']}"
         f"\n何か問題があった場合は返信してください"
     )
-    send_gmail_notification(to_addr, subject, body)
-    print("✅ Gmail通知送信完了")
+
+    try:
+        send_gmail_notification(to_addr, subject, body)
+        print("✅ Gmail通知送信完了")
+    except Exception as e:
+        # ここで発生したエラーの詳細を出力する
+        print(f"❌ Gmail通知の送信中にエラーが発生しました: {e}")
 
 # ---- FTP ----
 def ftp_connect(retries=5, delay=5):
