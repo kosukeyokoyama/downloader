@@ -13,6 +13,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
 import pathlib
+import ast
+
 # ---- 環境変数から Secrets を読み込む ----
 FTP_HOST = os.environ["FTP_HOST"]
 FTP_USER = os.environ["FTP_USER"]
@@ -70,58 +72,21 @@ def send_gmail_notification(to_addr, subject, body):
     message = create_message(to_addr, subject, body)
     send_message(service, 'me', message)
 
-import ast
-
-def safe_load_json(file_path):
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read().strip()
-
-        # 先頭・末尾のクオートは無視
-        if (content.startswith("'") and content.endswith("'")) or \
-           (content.startswith('"') and content.endswith('"')):
-            content = content[1:-1]
-
-        # 改行・タブ除去
-        content = content.replace("\n", "").replace("\r", "").replace("\t", "").strip()
-
-        # Python辞書リテラルを安全に評価して辞書化
-        data = ast.literal_eval(content)
-
-        # 辞書をJSON文字列に変換してJSONとして扱う
-        json_str = json.dumps(data)
-        return json.loads(json_str)
-
-    except Exception as e:
-        print(f"Failed to parse JSON {file_path}: {e}")
-        os.remove(file_path)
-        return None
-
-
 # ---- 通知 ----
-def tuuti(file_path):
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read().strip()
-        data = ast.literal_eval(content)
-    except Exception as e:
-        print(f"Failed to parse JSON {file_path}: {e}")
-        os.remove(file_path)
-        return
-    print(data)
-    if data.get("notify_method") != "gmail":
+def tuuti(data_dict, file_path):
+    print(data_dict)
+    if data_dict.get("notify_method") != "gmail":
         print("ℹ️ 通知は無効化されています。スキップします。")
-        os.remove(file_path)
         return
 
     global id, password, to
     to_addr = to
     subject = "✅ ダウンロード完了"
-    file = f"{data['file_name']}.{data['format']}"
+    file = f"{data_dict['file_name']}.{data_dict['format']}"
     file_encoded = urllib.parse.quote(file)
 
     body = (
-        f"{data['file_name']} が選択肢に追加されました\n"
+        f"{data_dict['file_name']} が選択肢に追加されました\n"
         f"ダウンロードは以下URLからできます\n"
         f"https://kosukedownload.kesug.com/download.php?id={id}&pass={password}&download_file={file_encoded}\n\n"
         f"サイトのアクセスリンク: https://kosukedownload.kesug.com/index.php?id={id}&pass={password}"
@@ -129,7 +94,7 @@ def tuuti(file_path):
     )
     send_gmail_notification(to_addr, subject, body)
     print("✅ Gmail通知送信完了")
-    os.remove(file_path)
+
 
 # ---- FTP ----
 def ftp_connect(retries=5, delay=5):
@@ -152,6 +117,9 @@ def upload_ftp_file(ftp, local_path, ftp_path):
 
 # ---- Google Drive 認証 ----
 def authenticate_google_drive():
+    with open("client_secret.json", "w", encoding="utf-8") as f:
+        f.write(CLIENT_SECRET1_CONTENT)
+
     creds = None
     if os.path.exists(TOKEN_PATH):
         creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES_DRIVE)
@@ -178,6 +146,8 @@ def upload_file_to_drive(file_path, file_name, folder_id=None):
 # ---- ファイルサイズ取得 ----
 def get_file_size(file_path):
     return os.path.getsize(file_path)
+
+# ---- ローカルリクエスト処理 ----
 def process_local_requests():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -196,36 +166,36 @@ def process_local_requests():
         try:
             with open(local_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-                # 最初にjson.loadsで試行
-                request = json.loads(content)
-        except json.JSONDecodeError:
-            # JSONデコードに失敗した場合、ast.literal_evalでPython辞書として評価
-            try:
-                request = ast.literal_eval(content)
-            except Exception as e:
-                print(f"Error processing {local_file}: Could not parse file as valid JSON or Python literal. Details: {e}")
-                os.remove(local_file)
-                continue
+                try:
+                    # 最初にjson.loadsで試行
+                    request = json.loads(content)
+                except json.JSONDecodeError:
+                    # JSONデコードに失敗した場合、ast.literal_evalでPython辞書として評価
+                    request = ast.literal_eval(content)
         except Exception as e:
-            print(f"An unexpected error occurred while processing {local_file}: {e}")
-            os.remove(local_file)
+            print(f"Error processing {local_file}: Could not parse file. Details: {e}")
+            if os.path.exists(local_file):
+                os.remove(local_file)
             continue
 
         if not isinstance(request, dict):
             print(f"Error processing {local_file}: Parsed content is not a dictionary.")
-            os.remove(local_file)
+            if os.path.exists(local_file):
+                os.remove(local_file)
             continue
 
         url = request.get('url')
         if not isinstance(url, str):
             print(f"Invalid URL type in request: {type(url)}")
-            os.remove(local_file)
+            if os.path.exists(local_file):
+                os.remove(local_file)
             continue
 
         file_name_clean = re.sub(r'[<>:"/\\|?*]', '', request.get('file_name', ''))
         if not file_name_clean:
             print(f"Invalid file_name in request: {request.get('file_name', 'N/A')}")
-            os.remove(local_file)
+            if os.path.exists(local_file):
+                os.remove(local_file)
             continue
 
         global ID, id, to, password
@@ -237,7 +207,8 @@ def process_local_requests():
         
         if mode is None:
             print(f"Unsupported format: {request.get('format', 'N/A')}")
-            os.remove(local_file)
+            if os.path.exists(local_file):
+                os.remove(local_file)
             continue
 
         command = [
@@ -250,31 +221,43 @@ def process_local_requests():
             local_file
         ]
         print(f"Running command: {' '.join(command)}")
+        # download.pyの実行
         subprocess.run(command)
 
         downloaded_file_path = os.path.join(folder_path, f"{file_name_clean}.{request['format']}")
         try:
-            file_size = get_file_size(downloaded_file_path)
-            print(f"File size: {file_size / (1024*1024):.2f} MB")
+            # ファイルの存在を確認してから処理
+            if os.path.exists(downloaded_file_path):
+                file_size = get_file_size(downloaded_file_path)
+                print(f"File size: {file_size / (1024*1024):.2f} MB")
+                
+                # 通知処理
+                tuuti(request, local_file)
 
-            tuuti(request)
+                # FTPアップロード
+                ftp = ftp_connect()
+                try:
+                    ftp_file_path = f"/upload_contents/{ID}/{file_name_clean}.{request['format']}"
+                    upload_ftp_file(ftp, downloaded_file_path, ftp_file_path)
+                finally:
+                    ftp.quit()
 
-            ftp = ftp_connect()
-            try:
-                ftp_file_path = f"/upload_contents/{ID}/{file_name_clean}.{request['format']}"
-                upload_ftp_file(ftp, downloaded_file_path, ftp_file_path)
-            finally:
-                ftp.quit()
+                # Google Driveアップロード
+                upload_file_to_drive(downloaded_file_path, f"{file_name_clean}.{request['format']}")
 
-            upload_file_to_drive(downloaded_file_path, f"{file_name_clean}.{request['format']}")
-
-            os.remove(downloaded_file_path)
+                # 正常終了後、ダウンロードしたファイルとリクエストファイルを削除
+                os.remove(downloaded_file_path)
+            
+            # リクエストファイルは正常に処理されたので削除
+            if os.path.exists(local_file):
+                os.remove(local_file)
 
         except Exception as e:
             print(f"Error processing {local_file}: {e}")
             # エラー時もクリーンアップを実行
             if os.path.exists(downloaded_file_path):
                 os.remove(downloaded_file_path)
+            # リクエストファイルはエラーが発生したので削除
             if os.path.exists(local_file):
                 os.remove(local_file)
 
