@@ -99,29 +99,21 @@ def safe_load_json(file_path):
 
 
 # ---- 通知 ----
-def tuuti(file_path):
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read().strip()
-        data = ast.literal_eval(content)
-    except Exception as e:
-        print(f"Failed to parse JSON {file_path}: {e}")
-        os.remove(file_path)
-        return
-    print(data)
-    if data.get("notify_method") != "gmail":
+# tuuti を修正
+def tuuti(data_dict):
+    print(data_dict)
+    if data_dict.get("notify_method") != "gmail":
         print("ℹ️ 通知は無効化されています。スキップします。")
-        os.remove(file_path)
         return
 
     global id, password, to
     to_addr = to
     subject = "✅ ダウンロード完了"
-    file = f"{data['file_name']}.{data['format']}"
+    file = f"{data_dict['file_name']}.{data_dict['format']}"
     file_encoded = urllib.parse.quote(file)
 
     body = (
-        f"{data['file_name']} が選択肢に追加されました\n"
+        f"{data_dict['file_name']} が選択肢に追加されました\n"
         f"ダウンロードは以下URLからできます\n"
         f"https://kosukedownload.kesug.com/download.php?id={id}&pass={password}&download_file={file_encoded}\n\n"
         f"サイトのアクセスリンク: https://kosukedownload.kesug.com/index.php?id={id}&pass={password}"
@@ -129,7 +121,6 @@ def tuuti(file_path):
     )
     send_gmail_notification(to_addr, subject, body)
     print("✅ Gmail通知送信完了")
-    os.remove(file_path)
 
 # ---- FTP ----
 def ftp_connect(retries=5, delay=5):
