@@ -88,7 +88,7 @@ def tuuti(file_path):
         content = re.sub(r"(?<!\\)'", '"', content)
         print(content)
     # JSON 解析
-        request = json.loads(content)
+        data = json.loads(content)
 
     except Exception as e:
         print(f"Failed to parse local JSON {file_path}: {e}")
