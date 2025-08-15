@@ -55,10 +55,10 @@ jobs:
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USER: ${{ secrets.FTP_USER }}
           FTP_PASS: ${{ secrets.FTP_PASS }}
-          GMAIL_TOKEN_B64: ${{ secrets.GMAIL_TOKEN }}
-          GOOGLE_DRIVE_CRED_B64: ${{ secrets.GOOGLE_DRIVE_CRED }}
-          CLIENT_SECRET_B64: ${{ secrets.CLIENT_SECRET }}
-          CLIENT_SECRET1_B64: ${{ secrets.CLIENT_SECRET1 }}
+          GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
+          GOOGLE_DRIVE_CRED: ${{ secrets.GOOGLE_DRIVE_CRED }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          CLIENT_SECRET1: ${{ secrets.CLIENT_SECRET1 }}
           YT_COOKIE: ${{ secrets.YT_COOKIE }}
         run: |
           source .venv/bin/activate
