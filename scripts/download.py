@@ -58,8 +58,7 @@ def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
         'quiet': False,
         'socket_timeout': 180,
         'retries': retries,
-        'fragment_retries': retries,
-        **site_specific_opts
+        'fragment_retries': retries
     }
 
     if ffmpeg_location:
@@ -109,8 +108,7 @@ def download_video(url, output_dir, name, retries=5, sleep_sec=5):
         'quiet': False,
         'socket_timeout': 180,
         'retries': retries,
-        'fragment_retries': retries,
-        **site_specific_opts
+        'fragment_retries': retries
     }
 
     if ffmpeg_location:
