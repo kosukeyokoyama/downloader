@@ -39,7 +39,7 @@ SCOPES_DRIVE = ['https://www.googleapis.com/auth/drive.file']
 
 # ---- Gmail 認証 ----
 def gmail_authenticate():
-    with open("client_secret.json", "w", encoding="utf-8") as f:
+    with open("client_secret1.json", "w", encoding="utf-8") as f:
         f.write(CLIENT_SECRET_CONTENT)
 
     creds = None
@@ -49,11 +49,9 @@ def gmail_authenticate():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", SCOPES_GMAIL)
-            creds = flow.run_local_server(port=8080)
-        with open(TOKEN1_PATH, "w") as f:
-            f.write(creds.to_json())
+            raise RuntimeError("No valid Gmail token available. Generate token locally and add to Secrets.")
     return creds
+
 
 def create_message(to, subject, body):
     message = MIMEText(body, 'plain', 'utf-8')
@@ -161,11 +159,9 @@ def authenticate_google_drive():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", SCOPES_DRIVE)
-            creds = flow.run_local_server(port=8080)
-        with open(TOKEN_PATH, "w") as f:
-            f.write(creds.to_json())
+            raise RuntimeError("No valid Drive token available. Generate token locally and add to Secrets.")
     return build('drive', 'v3', credentials=creds)
+
 
 def upload_file_to_drive(file_path, file_name, folder_id=None):
     service = authenticate_google_drive()
