@@ -1,26 +1,26 @@
 import yt_dlp
 import sys
 import os
-import time
+import subprocess
 import glob
-
-if len(sys.argv) > 2:
-    out_dir = sys.argv[2]
-    os.makedirs(out_dir, exist_ok=True)
+import time
 
 def resource_path(relative_path):
+    """ GitHub Actions などでも相対パスで cookie 等を参照 """
     base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
 
 def sanitize_input(input_str):
+    """ ダブルクオーテーションを除去 """
     return input_str.strip('"')
 
 def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
     filename = os.path.join(output_dir, name)
     mp3_path = filename + '.mp3'
     url = sanitize_input(url)
+    youtube_cookie = resource_path("cookies/youtube_cookies.txt")
+    nico_cookie = resource_path("cookies/niconico_cookies.txt")
 
-    # シークレット対応クッキー
 # cookie 設定部分
     site_specific_opts = {}
     youtube_cookie_env = os.environ.get("YT_COOKIE_FILE")
@@ -44,7 +44,6 @@ def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
     elif "nicovideo.jp" in url and os.path.exists(nico_cookie):
         site_specific_opts['cookiefile'] = nico_cookie
 
-    ffmpeg_location = os.environ.get('FFMPEG_LOCATION', None)
 
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -55,14 +54,12 @@ def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
             'preferredquality': '192',
         }],
         'noplaylist': True,
-        'quiet': False,
+        'quiet': True,
         'socket_timeout': 180,
         'retries': retries,
-        'fragment_retries': retries
+        'fragment_retries': retries,
+        **site_specific_opts
     }
-
-    if ffmpeg_location:
-        ydl_opts['ffmpeg_location'] = ffmpeg_location
 
     for attempt in range(retries):
         try:
@@ -76,6 +73,8 @@ def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
             else:
                 print(f"Warning: Expected file not found: {mp3_path}")
             print(f"Audio downloaded and saved as {name}.mp3")
+            # GitHub Actions ではローカル subprocess 呼び出しは不要
+            # subprocess.run(["python3", "./scripts/audio.py", mp3_path])
             return True
         except Exception as e:
             print(f"Audio Error: {e}")
@@ -88,31 +87,41 @@ def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
 def download_video(url, output_dir, name, retries=5, sleep_sec=5):
     filename = os.path.join(output_dir, name)
     url = sanitize_input(url)
-
-    youtube_cookie = os.environ.get("YT_COOKIE_FILE", resource_path("cookies/youtube_cookies.txt"))
+    youtube_cookie = resource_path("cookies/youtube_cookies.txt")
+    nico_cookie = resource_path("cookies/niconico_cookies.txt")
+# cookie 設定部分
+    site_specific_opts = {}
+    youtube_cookie_env = os.environ.get("YT_COOKIE_FILE")
+    youtube_cookie_secret = os.environ.get("YT_COOKIE")  # GitHub Secrets の直接値
     nico_cookie = resource_path("cookies/niconico_cookies.txt")
 
-    site_specific_opts = {}
     if "youtube.com" in url or "youtu.be" in url:
-        site_specific_opts['cookiefile'] = youtube_cookie
-    elif "nicovideo.jp" in url:
+        if youtube_cookie_env and os.path.exists(youtube_cookie_env):
+            site_specific_opts['cookiefile'] = youtube_cookie_env
+            print(f"Using cookie file: {youtube_cookie_env}")
+        elif youtube_cookie_secret:
+            # YT_COOKIE が文字列なら一時ファイルに保存
+            tmp_cookie_path = os.path.join(output_dir, "yt_cookie.txt")
+            with open(tmp_cookie_path, "w", encoding="utf-8") as f:
+                f.write(youtube_cookie_secret)
+            site_specific_opts['cookiefile'] = tmp_cookie_path
+            print("Using cookie from YT_COOKIE secret")
+        else:
+            print("No YouTube cookie provided — continuing without cookies.")
+
+    elif "nicovideo.jp" in url and os.path.exists(nico_cookie):
         site_specific_opts['cookiefile'] = nico_cookie
-
-    ffmpeg_location = os.environ.get('FFMPEG_LOCATION', None)
-
     ydl_opts = {
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'outtmpl': filename,
         'merge_output_format': 'mp4',
         'noplaylist': True,
-        'quiet': False,
+        'quiet': True,
         'socket_timeout': 180,
         'retries': retries,
-        'fragment_retries': retries
+        'fragment_retries': retries,
+        **site_specific_opts
     }
-
-    if ffmpeg_location:
-        ydl_opts['ffmpeg_location'] = ffmpeg_location
 
     for attempt in range(retries):
         try:
@@ -126,6 +135,7 @@ def download_video(url, output_dir, name, retries=5, sleep_sec=5):
                 os.utime(target_file, (now, now))
                 print(f"Timestamps updated: {target_file}")
                 print(f"Video downloaded and saved as {name}.mp4")
+                # subprocess.run(["python3", "./scripts/audio.py", target_file])
                 return True
             else:
                 print(f"Warning: File not found for pattern: {filename}.mp4")
@@ -140,7 +150,7 @@ def download_video(url, output_dir, name, retries=5, sleep_sec=5):
 
 if __name__ == '__main__':
     if len(sys.argv) < 6:
-        sys.exit("Usage: python main.py <URL> <Download Directory> <Name> <mode: audio|video> <local_json>")
+        sys.exit("Usage: python download_media.py <URL> <Download Directory> <Name> <mode: audio|video> <local_json>")
 
     url = sys.argv[1]
     download_dir = sys.argv[2]
