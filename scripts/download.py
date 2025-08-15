@@ -21,13 +21,27 @@ def download_audio(url, output_dir, name, retries=5, sleep_sec=5):
     url = sanitize_input(url)
 
     # シークレット対応クッキー
-    youtube_cookie = os.environ.get("YT_COOKIE_FILE", resource_path("cookies/youtube_cookies.txt"))
+# cookie 設定部分
+    site_specific_opts = {}
+    youtube_cookie_env = os.environ.get("YT_COOKIE_FILE")
+    youtube_cookie_secret = os.environ.get("YT_COOKIE")  # GitHub Secrets の直接値
     nico_cookie = resource_path("cookies/niconico_cookies.txt")
 
-    site_specific_opts = {}
     if "youtube.com" in url or "youtu.be" in url:
-        site_specific_opts['cookiefile'] = youtube_cookie
-    elif "nicovideo.jp" in url:
+        if youtube_cookie_env and os.path.exists(youtube_cookie_env):
+            site_specific_opts['cookiefile'] = youtube_cookie_env
+            print(f"Using cookie file: {youtube_cookie_env}")
+        elif youtube_cookie_secret:
+            # YT_COOKIE が文字列なら一時ファイルに保存
+            tmp_cookie_path = os.path.join(output_dir, "yt_cookie.txt")
+            with open(tmp_cookie_path, "w", encoding="utf-8") as f:
+                f.write(youtube_cookie_secret)
+            site_specific_opts['cookiefile'] = tmp_cookie_path
+            print("Using cookie from YT_COOKIE secret")
+        else:
+            print("No YouTube cookie provided — continuing without cookies.")
+
+    elif "nicovideo.jp" in url and os.path.exists(nico_cookie):
         site_specific_opts['cookiefile'] = nico_cookie
 
     ffmpeg_location = os.environ.get('FFMPEG_LOCATION', None)
