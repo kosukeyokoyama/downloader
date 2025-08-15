@@ -20,7 +20,9 @@ FTP_PASS = os.environ["FTP_PASS"]
 
 CLIENT_SECRET_CONTENT = os.environ["CLIENT_SECRET"]
 CLIENT_SECRET1_CONTENT = os.environ["CLIENT_SECRET1"]
-
+token_b64 = os.environ["GMAIL_TOKEN"]
+with open("token1.json", "w", encoding="utf-8") as f:
+    f.write(base64.b64decode(token_b64).decode("utf-8"))
 TOKEN_PATH = "token.json"
 TOKEN1_PATH = "token1.json"
 
