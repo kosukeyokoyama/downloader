@@ -1,3 +1,4 @@
+# coding: utf-8
 import os
 import time
 import json
@@ -8,7 +9,7 @@ import urllib.parse
 from email.mime.text import MIMEText
 import base64
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import InstalledAppAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
@@ -18,11 +19,19 @@ import ast
 data = ""
 
 # ---- 環境変数から Secrets を読み込む ----
+FTP_HOST = os.environ["FTP_HOST"]
+FTP_USER = os.environ["FTP_USER"]
+FTP_PASS = os.environ["FTP_PASS"]
+
+# クッキー以外のBase64変数はそのまま
 CLIENT_SECRET_B64 = os.environ["CLIENT_SECRET_B64"]
 CLIENT_SECRET1_B64 = os.environ["CLIENT_SECRET1_B64"]
 GMAIL_TOKEN_B64 = os.environ["GMAIL_TOKEN_B64"]
 GOOGLE_DRIVE_CRED_B64 = os.environ["GOOGLE_DRIVE_CRED_B64"]
-YT_COOKIE_B64 = os.environ["YT_COOKIE_B64"]
+
+# YT_COOKIEをBase64化せずに直接読み込むように変更
+YT_COOKIE = os.environ["YT_COOKIE"]
+
 TOKEN_PATH = "token.json"
 TOKEN1_PATH = "token1.json"
 
@@ -39,24 +48,21 @@ SCOPES_DRIVE = ['https://www.googleapis.com/auth/drive.file']
 
 # ---- Gmail 認証 ----
 def gmail_authenticate():
-    client_secret_data = None
-    try:
-        # 環境変数の文字列を直接JSONとしてロードしてみる
-        client_secret_data = json.loads(CLIENT_SECRET_CONTENT)
-    except json.JSONDecodeError:
-        try:
-            # 失敗した場合、Python辞書として評価してみる
-            client_secret_data = ast.literal_eval(CLIENT_SECRET_CONTENT)
-        except (ValueError, SyntaxError) as e:
-            print(f"CLIENT_SECRET_CONTENT の解析に失敗しました。JSON形式を確認してください: {e}")
-            return None
+    client_secret_decoded = base64.b64decode(CLIENT_SECRET_B64).decode('utf-8')
+    client_secret_data = json.loads(client_secret_decoded)
     
     with open("client_secret.json", "w", encoding="utf-8") as f:
         json.dump(client_secret_data, f, indent=4)
 
     creds = None
+    if GMAIL_TOKEN_B64:
+        gmail_token_decoded = base64.b64decode(GMAIL_TOKEN_B64).decode('utf-8')
+        with open(TOKEN1_PATH, "w") as f:
+            f.write(gmail_token_decoded)
+
     if os.path.exists(TOKEN1_PATH):
         creds = Credentials.from_authorized_user_file(TOKEN1_PATH, SCOPES_GMAIL)
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -135,24 +141,21 @@ def upload_ftp_file(ftp, local_path, ftp_path):
 
 # ---- Google Drive 認証 ----
 def authenticate_google_drive():
-    client_secret_data = None
-    try:
-        # 環境変数の文字列を直接JSONとしてロードしてみる
-        client_secret_data = json.loads(CLIENT_SECRET1_CONTENT)
-    except json.JSONDecodeError:
-        try:
-            # 失敗した場合、Python辞書として評価してみる
-            client_secret_data = ast.literal_eval(CLIENT_SECRET1_CONTENT)
-        except (ValueError, SyntaxError) as e:
-            print(f"CLIENT_SECRET1_CONTENT の解析に失敗しました。JSON形式を確認してください: {e}")
-            return None
-        
+    client_secret_decoded = base64.b64decode(CLIENT_SECRET1_B64).decode('utf-8')
+    client_secret_data = json.loads(client_secret_decoded)
+
     with open("client_secret.json", "w", encoding="utf-8") as f:
         json.dump(client_secret_data, f, indent=4)
         
     creds = None
+    if GOOGLE_DRIVE_CRED_B64:
+        google_drive_cred_decoded = base64.b64decode(GOOGLE_DRIVE_CRED_B64).decode('utf-8')
+        with open(TOKEN_PATH, "w") as f:
+            f.write(google_drive_cred_decoded)
+    
     if os.path.exists(TOKEN_PATH):
         creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES_DRIVE)
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -184,6 +187,11 @@ def get_file_size(file_path):
 def process_local_requests():
     os.makedirs(LOCAL_REQUEST_DIR, exist_ok=True)
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+    os.makedirs("cookies", exist_ok=True)
+
+    # Base64デコードを削除し、YT_COOKIE環境変数を直接ファイルに書き込む
+    with open("cookies/youtube_cookies.txt", "w", encoding="utf-8") as f:
+        f.write(YT_COOKIE)
 
     exe_to_run = "python3"
     script_path = "./scripts/download.py"
@@ -200,7 +208,6 @@ def process_local_requests():
             with open(local_file, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # JSON形式とPython辞書形式の両方に対応するロジック
             try:
                 request = json.loads(content)
             except json.JSONDecodeError:
@@ -215,7 +222,6 @@ def process_local_requests():
                 os.remove(local_file)
             continue
 
-        # グローバル変数に値をセット
         global ID, id, to, password
         ID = request.get('user_id')
         id = ID
@@ -281,3 +287,4 @@ def main_loop():
 
 if __name__ == "__main__":
     main_loop()
+
