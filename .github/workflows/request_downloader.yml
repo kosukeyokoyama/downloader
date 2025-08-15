@@ -59,7 +59,7 @@ jobs:
           GOOGLE_DRIVE_CRED_B64: ${{ secrets.GOOGLE_DRIVE_CRED }}
           CLIENT_SECRET_B64: ${{ secrets.CLIENT_SECRET }}
           CLIENT_SECRET1_B64: ${{ secrets.CLIENT_SECRET1 }}
-          YT_COOKIE_B64: ${{ secrets.YT_COOKIE }}
+          YT_COOKIE: ${{ secrets.YT_COOKIE }}
         run: |
           source .venv/bin/activate
           python main.py
